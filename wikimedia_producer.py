@@ -5,7 +5,6 @@ import json
 import asyncio
 import aiohttp
 from aiosseclient import aiosseclient
-from sqlalchemy import true
 from kafka_tutorial import BasicKafkaProducer  #pylint-disable: import-error
 import numpy as np
 
