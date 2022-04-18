@@ -71,7 +71,7 @@ def main():
         "delivery.timeout.ms": 30000, # fail after 30s
         "max.in.flight.requests.per.connection": 5,
 
-        "compression.type": 'snappy',  # one of: none, gzip, snappy, lz4, zstd
+        "compression.type": 'none',  # one of: none, gzip, snappy, lz4, zstd
         "linger.ms": 100,  # wait ms then send
         "batch.size": 64*1024,  #in Bytes
 

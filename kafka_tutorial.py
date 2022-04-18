@@ -90,24 +90,32 @@ class BasicKafkaConsumer(Consumer):
             on_lost=self.on_lost,
         )
     
+    def read_from_topic(self, timeout=10.0) -> str:
+        msg = super().poll(timeout=timeout)  # in seconds
+        if msg is None:
+            self.logger.info(f"No more messages received after {timeout} seconds")
+            return None
+        if msg.error():
+            raise KafkaException(msg.error())
+        else:
+            # Proper message
+            self.logger.debug('%% %s [%d] at offset %d with key %s:\n' %
+                            (msg.topic(), msg.partition(), msg.offset(),
+                            str(msg.key())))
+            return msg.value()
+        return None
+
+
     def loop_for_messages(self, timeout=10.0) -> None:
         """
         run an infinity loop and poll messages, user can stop this with <Ctrl+C>
         """
         try:
             while True:
-                msg = super().poll(timeout=timeout)  # in seconds
+                msg = self.read_from_topic(timeout=timeout)
                 if msg is None:
-                    self.logger.info(f"No more messages received after {timeout} seconds")
                     break
-                if msg.error():
-                    raise KafkaException(msg.error())
-                else:
-                    # Proper message
-                    self.logger.debug('%% %s [%d] at offset %d with key %s:\n' %
-                                    (msg.topic(), msg.partition(), msg.offset(),
-                                    str(msg.key())))
-                    print(msg.value())
+                logging.debug(msg)
 
         except KeyboardInterrupt:
             self.logger.info('%% Aborted by user\n')
@@ -146,7 +154,7 @@ def main() -> None:
     """
     logging.basicConfig(level=logging.DEBUG, \
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    topic = "first-topic"
+    topic = "wikimedia.recentchange"
     logging.info(f"Preparing Kafka-Demo for {topic=}")
     # Configuration see: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     params = {
@@ -171,7 +179,7 @@ def main() -> None:
         consumers[i] = BasicKafkaConsumer({**params, **params_consumer})
 
     cluster_meta: ClusterMetadata = consumers[0].list_topics()
-    assert topic in cluster_meta.topics, f"{topic} not in {cluster_meta.topics()}"
+    assert topic in cluster_meta.topics, f"{topic} not in {cluster_meta.topics}"
     for consumer in consumers:
         consumer.subscribe([topic])
 
